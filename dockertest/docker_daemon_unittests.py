@@ -66,5 +66,56 @@ class DDTest(DDTestBase):
         self.assertEqual(i.get_json('bar'), [{u'foo': u'bar'}])
         self.assertEqual(i.interface, None)
 
+
+class TestStringEdit(unittest.TestCase):
+    pass
+
+    def test_bad_input_no_prefix(self):
+        import docker_daemon
+        self.assertRaises(ValueError,
+                          docker_daemon.edit_options_string, "OPTINOS=hi")
+
+    def test_bad_input_mismatched_quotes(self):
+        import docker_daemon
+        self.assertRaises(ValueError,
+                          docker_daemon.edit_options_string,
+                          "OPTIONS='missing end quote")
+
+
+# Various combinations of inputs, and their expected output for
+# the edit_options_string() function.
+string_edit_tests = [
+    # original          remove          add             expected
+    [ 'abc',            None,           None,           'abc'           ],
+    [ '"abc"',          None,           None,           '"abc"'         ],
+    [ '"abc"',          "abc",          "def",          '"def"'         ],
+    [ "'--a --b --c'",  '--a',          None,           "'--b --c'"     ],
+    [ "'--a --b --c'",  '--b',          None,           "'--a  --c'"    ],
+    [ "'--a --b --c'",  '--c',          None,           "'--a --b'"     ],
+    [ "'--a --b --c'",  ['--a', '--c'], None,           "'--b'"         ],
+    [ "'--a --c'",      None,           ['--a', '--b'], "'--a --c --b'" ],
+]
+
+
+def test_generator_string_edit(s_in, remove, add, out_expected):
+    """
+    Return a test function that calls edit_options_string() with the
+    given arguments and confirms that its return value is as expected.
+    """
+    def test(self):
+        import docker_daemon
+        out_actual = docker_daemon.edit_options_string(s_in, remove, add)
+        self.assertEqual(out_actual, out_expected)
+    return test
+
+
 if __name__ == '__main__':
+    # Generate a test_NNN function for each test case in table above
+    for i, t in enumerate(string_edit_tests):
+        test_name = 'test_%03d' % i
+        test_ref = test_generator_string_edit("OPTIONS=%s\n" % t[0],
+                                              t[1], t[2],
+                                              "OPTIONS=%s\n" % t[3])
+        setattr(TestStringEdit, test_name, test_ref)
+
     unittest.main()
