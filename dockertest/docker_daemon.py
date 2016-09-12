@@ -11,6 +11,9 @@ import json
 import os
 from autotest.client import utils
 
+# File extension used for preserving original docker config file
+PRESERVED_EXTENSION = '.docker-autotest-preserved'
+
 
 class ClientBase(object):
 
@@ -132,7 +135,6 @@ def _which_docker():
 
 def _systemd_action(action):
     utils.run("systemctl %s %s.service" % (action, _which_docker()))
-    # FIXME: check status
 
 
 def stop():
@@ -150,13 +152,6 @@ def restart():
     _systemd_action('restart')
 
 
-def _preserved_extension():
-    """
-    File extension (including dot) used for our backup files
-    """
-    return '.docker-autotest-preserved'
-
-
 def assert_pristine_environment():
     """
     Barf if there are any leftover .docker-autotest-preserved files
@@ -165,7 +160,7 @@ def assert_pristine_environment():
     undefined state.
     """
     for suffix in ['', '-latest']:
-        path = '/etc/sysconfig/docker%s%s' % (suffix, _preserved_extension())
+        path = '/etc/sysconfig/docker%s%s' % (suffix, PRESERVED_EXTENSION)
         if os.path.exists(path):
             raise RuntimeError("Leftover backup file: %s. System is"
                                " in undefined state! Please examine that"
@@ -182,7 +177,7 @@ def edit_options_file(remove=None, add=None):
     :param add: string or list of strings - option(s) to add to line
     """
     sysconfig_file = '/etc/sysconfig/%s' % _which_docker()
-    sysconfig_bkp = sysconfig_file + _preserved_extension()
+    sysconfig_bkp = sysconfig_file + PRESERVED_EXTENSION
     if os.path.exists(sysconfig_bkp):
         raise RuntimeError("Backup file already exists: %s" % sysconfig_bkp)
     sysconfig_tmp = sysconfig_file + '.tmp'
@@ -199,7 +194,8 @@ def edit_options_file(remove=None, add=None):
 def edit_options_string(line, remove=None, add=None):
     """
     Helper for edit_options_file(). Given an OPTIONS='...' string,
-    returns OPTIONS='...'\n with the given options removed and/or added.
+    returns OPTIONS='...' with the given options removed and/or added
+    and a trailing newline.
 
     :param line: string of the form OPTIONS='something'
     :param remove: string or list of strings - option(s) to remove from line
@@ -240,7 +236,7 @@ def revert_options_file():
     docker daemon.
     """
     sysconfig_file = '/etc/sysconfig/%s' % _which_docker()
-    sysconfig_bkp = sysconfig_file + _preserved_extension()
+    sysconfig_bkp = sysconfig_file + PRESERVED_EXTENSION
     if os.path.exists(sysconfig_bkp):
         os.rename(sysconfig_bkp, sysconfig_file)
         restart()

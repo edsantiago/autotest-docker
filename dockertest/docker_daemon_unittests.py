@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import json
-import unittest
+import unittest2
 import sys
 import types
 
@@ -36,7 +36,7 @@ mock('autotest.client.shared.error')
 mock('autotest.client.shared.service')
 
 
-class DDTestBase(unittest.TestCase):
+class DDTestBase(unittest2.TestCase):
 
     def setUp(self):
         import docker_daemon
@@ -67,8 +67,35 @@ class DDTest(DDTestBase):
         self.assertEqual(i.interface, None)
 
 
-class TestStringEdit(unittest.TestCase):
-    pass
+class TestStringEdit(unittest2.TestCase):
+    """
+    Tests for edit_option_string()
+    """
+
+    # Various combinations of inputs, and their expected output for
+    # the edit_options_string() function.
+    # Thanks to  https://gist.github.com/encukou/10017915  for documentation
+    # on unittest2.subTest()
+    string_edit_tests = [
+        # original         remove          add             expected
+        ['abc',            None,           None,           'abc'],
+        ['"abc"',          None,           None,           '"abc"'],
+        ['"abc"',          "abc",          "def",          '"def"'],
+        ["'--a --b --c'",  '--a',          None,           "'--b --c'"],
+        ["'--a --b --c'",  '--b',          None,           "'--a  --c'"],
+        ["'--a --b --c'",  '--c',          None,           "'--a --b'"],
+        ["'--a --b --c'",  ['--a', '--c'], None,           "'--b'"],
+        ["'--a --c'",      None,           ['--a', '--b'], "'--a --c --b'"],
+    ]
+
+    def test_edit_options_string(self):
+        import docker_daemon
+        for (opts_in, remove, add, opts_out) in self.string_edit_tests:
+            with self.subTest(name="%s -<%s> +<%s>" % (opts_in, remove, add)):
+                s_in = 'OPTIONS=%s\n' % opts_in
+                expected = 'OPTIONS=%s\n' % opts_out
+                actual = docker_daemon.edit_options_string(s_in, remove, add)
+                self.assertEqual(actual, expected)
 
     def test_bad_input_no_prefix(self):
         import docker_daemon
@@ -82,40 +109,5 @@ class TestStringEdit(unittest.TestCase):
                           "OPTIONS='missing end quote")
 
 
-# Various combinations of inputs, and their expected output for
-# the edit_options_string() function.
-string_edit_tests = [
-    # original          remove          add             expected
-    [ 'abc',            None,           None,           'abc'           ],
-    [ '"abc"',          None,           None,           '"abc"'         ],
-    [ '"abc"',          "abc",          "def",          '"def"'         ],
-    [ "'--a --b --c'",  '--a',          None,           "'--b --c'"     ],
-    [ "'--a --b --c'",  '--b',          None,           "'--a  --c'"    ],
-    [ "'--a --b --c'",  '--c',          None,           "'--a --b'"     ],
-    [ "'--a --b --c'",  ['--a', '--c'], None,           "'--b'"         ],
-    [ "'--a --c'",      None,           ['--a', '--b'], "'--a --c --b'" ],
-]
-
-
-def test_generator_string_edit(s_in, remove, add, out_expected):
-    """
-    Return a test function that calls edit_options_string() with the
-    given arguments and confirms that its return value is as expected.
-    """
-    def test(self):
-        import docker_daemon
-        out_actual = docker_daemon.edit_options_string(s_in, remove, add)
-        self.assertEqual(out_actual, out_expected)
-    return test
-
-
 if __name__ == '__main__':
-    # Generate a test_NNN function for each test case in table above
-    for i, t in enumerate(string_edit_tests):
-        test_name = 'test_%03d' % i
-        test_ref = test_generator_string_edit("OPTIONS=%s\n" % t[0],
-                                              t[1], t[2],
-                                              "OPTIONS=%s\n" % t[3])
-        setattr(TestStringEdit, test_name, test_ref)
-
-    unittest.main()
+    unittest2.main()
