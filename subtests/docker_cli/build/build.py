@@ -28,7 +28,7 @@ from dockertest.containers import DockerContainers
 from dockertest.dockercmd import DockerCmd
 from dockertest.images import DockerImage
 from dockertest.images import DockerImages
-from dockertest.output import OutputGood
+from dockertest.output import OutputGood, mustpass, mustfail
 from dockertest.config import get_as_list
 from dockertest.xceptions import DockerTestFail
 from dockertest.xceptions import DockerTestError
@@ -123,7 +123,8 @@ class postprocessing(object):
                 result = method(build_def, command, parameter)
                 passed.append(result)
                 if not result:
-                    self.logwarning("Postprocess %s: Failed", command)
+                    self.logwarning("Postprocess %s(%s): Failed", command,
+                                    parameter)
         if not all(passed):
             raise DockerTestFail("One or more postprocess commands did not"
                                  " pass, see debug log for details")
@@ -249,18 +250,23 @@ class postprocessing(object):
         expected = int(parameter)
         if command == 'img_count':
             word = 'images'
-            before = len(self.sub_stuff['existing_images'])
-            after = len(self.sub_stuff['di'].list_imgs())
+            before = set(self.sub_stuff['existing_images'])
+            after = set(self.sub_stuff['di'].list_imgs())
         elif command == 'cnt_count':
             word = 'containers'
-            before = len(self.sub_stuff['existing_containers'])
-            after = len(self.sub_stuff['dc'].list_containers())
+            before = set(self.sub_stuff['existing_containers'])
+            after = set(self.sub_stuff['dc'].list_containers())
         else:
             raise DockerTestError("Command error: %s" % command)
-        diff = after - before
-        self.logdebug("%s() Found %d additional %s", command, diff, word)
-        self.logdebug("%s() Expecting to find %d", command, expected)
-        return diff == expected
+        diff = len(after) - len(before)
+        if diff == expected:
+            self.logdebug("%s(): found expected diff (%s)", command, diff)
+            return True
+        self.logwarning("%s(): expected %d added %s, found %s", command,
+                        expected, word, diff)
+        self.logdebug("%s(): before = %s", command, before)
+        self.logdebug("%s(): after = %s", command, after)
+        return False
 
     def _all_images(self):
         di = self.sub_stuff['di']
@@ -368,6 +374,10 @@ class postprocessing(object):
         dkrcmd = DockerCmd(self, 'run', subargs)
         dkrcmd.quiet = True
         dkrcmd.execute()
+        # cat and ls will exit 0, 1, or 2. Anything else is docker error.
+        if dkrcmd.exit_status > 2:
+            raise DockerTestError("Unexpected exit status %d from %s" %
+                                  (dkrcmd.exit_status, cmd))
         exists = dkrcmd.exit_status == 0
         self.logdebug('%s(%s) exists: %s', command, path, exists)
         if command.find('exist') > -1:
@@ -490,7 +500,11 @@ class build_base(postprocessing, subtest.SubSubtest):
     def run_once(self):
         super(build_base, self).run_once()
         for build_def in self.sub_stuff['builds']:
-            build_def.dockercmd.execute()
+            result = build_def.dockercmd.execute()
+            if self.__class__.__name__.startswith("bad"):
+                mustfail(result)
+            else:
+                mustpass(result)
 
     def postprocess(self):
         try:
