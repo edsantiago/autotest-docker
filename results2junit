@@ -95,7 +95,7 @@ class TestSuite(object):
         for i, tc in enumerate(self.testcases):
             if tc.name == 'garbage_check':
                 tc.classname = self.testcases[i-1].classname
-                tc.name = self.testcases[i-1].name + '--garbage-check'
+                tc.name = self.testcases[i-1].name + ' [garbage check]'
 
     def write_xml(self, outfile):
         """
