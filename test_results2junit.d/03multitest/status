@@ -1,0 +1,26 @@
+START	----	----	timestamp=1480540086	localtime=Nov 30 16:08:06	
+	START	docker/pretests/docker_test_images.1_122524623	docker/pretests/docker_test_images.1_122524623	timestamp=1480540088	timeout=7200	localtime=Nov 30 16:08:08	
+		GOOD	docker/pretests/docker_test_images.1_122524623	docker/pretests/docker_test_images.1_122524623	timestamp=1480540090	localtime=Nov 30 16:08:10	completed successfully
+	END GOOD	docker/pretests/docker_test_images.1_122524623	docker/pretests/docker_test_images.1_122524623	timestamp=1480540090	localtime=Nov 30 16:08:10	
+	START	docker/subtests/docker_cli/info.2_122524623	docker/subtests/docker_cli/info.2_122524623	timestamp=1480540090	timeout=7200	localtime=Nov 30 16:08:10	
+		GOOD	docker/subtests/docker_cli/info.2_122524623	docker/subtests/docker_cli/info.2_122524623	timestamp=1480540092	localtime=Nov 30 16:08:12	completed successfully
+	END GOOD	docker/subtests/docker_cli/info.2_122524623	docker/subtests/docker_cli/info.2_122524623	timestamp=1480540092	localtime=Nov 30 16:08:12	
+	START	docker/intratests/garbage_check.2_122524623	docker/intratests/garbage_check.2_122524623	timestamp=1480540092	timeout=7200	localtime=Nov 30 16:08:12	
+		GOOD	docker/intratests/garbage_check.2_122524623	docker/intratests/garbage_check.2_122524623	timestamp=1480540096	localtime=Nov 30 16:08:16	completed successfully
+	END GOOD	docker/intratests/garbage_check.2_122524623	docker/intratests/garbage_check.2_122524623	timestamp=1480540096	localtime=Nov 30 16:08:16	
+	START	docker/subtests/docker_cli/info.3_122524623	docker/subtests/docker_cli/info.3_122524623	timestamp=1480540096	timeout=7200	localtime=Nov 30 16:08:16	
+		GOOD	docker/subtests/docker_cli/info.3_122524623	docker/subtests/docker_cli/info.3_122524623	timestamp=1480540098	localtime=Nov 30 16:08:18	completed successfully
+	END GOOD	docker/subtests/docker_cli/info.3_122524623	docker/subtests/docker_cli/info.3_122524623	timestamp=1480540098	localtime=Nov 30 16:08:18	
+	START	docker/intratests/garbage_check.3_122524623	docker/intratests/garbage_check.3_122524623	timestamp=1480540098	timeout=7200	localtime=Nov 30 16:08:18	
+		GOOD	docker/intratests/garbage_check.3_122524623	docker/intratests/garbage_check.3_122524623	timestamp=1480540102	localtime=Nov 30 16:08:22	completed successfully
+	END GOOD	docker/intratests/garbage_check.3_122524623	docker/intratests/garbage_check.3_122524623	timestamp=1480540102	localtime=Nov 30 16:08:22	
+	START	docker/subtests/docker_cli/info.4_122524623	docker/subtests/docker_cli/info.4_122524623	timestamp=1480540102	timeout=7200	localtime=Nov 30 16:08:22	
+		GOOD	docker/subtests/docker_cli/info.4_122524623	docker/subtests/docker_cli/info.4_122524623	timestamp=1480540104	localtime=Nov 30 16:08:24	completed successfully
+	END GOOD	docker/subtests/docker_cli/info.4_122524623	docker/subtests/docker_cli/info.4_122524623	timestamp=1480540104	localtime=Nov 30 16:08:24	
+	START	docker/intratests/garbage_check.4_122524623	docker/intratests/garbage_check.4_122524623	timestamp=1480540104	timeout=7200	localtime=Nov 30 16:08:24	
+		GOOD	docker/intratests/garbage_check.4_122524623	docker/intratests/garbage_check.4_122524623	timestamp=1480540108	localtime=Nov 30 16:08:28	completed successfully
+	END GOOD	docker/intratests/garbage_check.4_122524623	docker/intratests/garbage_check.4_122524623	timestamp=1480540108	localtime=Nov 30 16:08:28	
+	START	docker/posttests/esm_example.5_122524623	docker/posttests/esm_example.5_122524623	timestamp=1480540108	timeout=7200	localtime=Nov 30 16:08:28	
+		GOOD	docker/posttests/esm_example.5_122524623	docker/posttests/esm_example.5_122524623	timestamp=1480540110	localtime=Nov 30 16:08:30	completed successfully
+	END GOOD	docker/posttests/esm_example.5_122524623	docker/posttests/esm_example.5_122524623	timestamp=1480540110	localtime=Nov 30 16:08:30	
+END GOOD	----	----	timestamp=1480540110	localtime=Nov 30 16:08:30	

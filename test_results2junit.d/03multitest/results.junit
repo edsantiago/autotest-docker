@@ -1,0 +1,15 @@
+<testsuites>
+    <testsuite name="03multitest" timestamp="2016-11-30" failures="0" tests="8" skipped="0" errors="0">
+        <properties>
+            <property name="input_name" value="03multitest"/>
+        </properties>
+        <testcase classname="03multitest.pretests" name="docker_test_images" time="2"/>
+        <testcase classname="03multitest.subtests.docker_cli" name="info" time="2"/>
+        <testcase classname="03multitest.subtests.docker_cli" name="info--garbage-check" time="4"/>
+        <testcase classname="03multitest.subtests.docker_cli" name="info(2)" time="2"/>
+        <testcase classname="03multitest.subtests.docker_cli" name="info(2)--garbage-check" time="4"/>
+        <testcase classname="03multitest.subtests.docker_cli" name="info(3)" time="2"/>
+        <testcase classname="03multitest.subtests.docker_cli" name="info(3)--garbage-check" time="4"/>
+        <testcase classname="03multitest.posttests" name="esm_example" time="2"/>
+    </testsuite>
+</testsuites>

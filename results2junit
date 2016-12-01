@@ -65,6 +65,7 @@ class TestSuite(object):
         parsed_time = time.localtime(overall['timestamp'])
         self.timestamp = time.strftime('%Y-%m-%d', parsed_time)
         self.testcases = []
+        self.testname_count = {}
         for result in self.results:
             testcase = TestCase(result, self.name)
             self.add_testcase(testcase)
@@ -77,6 +78,14 @@ class TestSuite(object):
         of tests, number of failures/errors/skipped).
         """
         self.testcases.append(testcase)
+
+        # Differentiate repeated runs of the same test, e.g. info(2), info(3)
+        if testcase.name in self.testname_count:
+            self.testname_count[testcase.name] += 1
+            if testcase.name != 'garbage_check':
+                testcase.name += '(%d)' % self.testname_count[testcase.name]
+        else:
+            self.testname_count[testcase.name] = 1
 
         self.count['tests'] += 1
         if testcase.category in self.count:
