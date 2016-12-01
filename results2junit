@@ -183,6 +183,12 @@ class TestCase(object):
         self.time = result['run_time']
         self.set_status(result)
 
+        # *Sob*. Jenkins intercepts URLs ending in '/run', redirecting them
+        # to a non-useful page. This makes it impossible to view failures
+        # in the run test. Workaround: use a different name in junit. Ugh.
+        if self.name == 'run':
+            self.name = 'docker_run'
+
     def set_status(self, result):
         """
         Sets category and message based on result status (good, error, etc)
