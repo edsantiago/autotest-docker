@@ -70,6 +70,7 @@ class TestSuite(object):
             testcase = TestCase(result, self.name)
             self.add_testcase(testcase)
 
+        self._indicate_multi_test_runs()
         self._consolidate_garbage_checks()
 
     def add_testcase(self, testcase):
@@ -80,16 +81,25 @@ class TestSuite(object):
         self.testcases.append(testcase)
 
         # Differentiate repeated runs of the same test, e.g. info(2), info(3)
-        if testcase.name in self.testname_count:
-            self.testname_count[testcase.name] += 1
-            if testcase.name != 'garbage_check':
-                testcase.name += '(%d)' % self.testname_count[testcase.name]
-        else:
-            self.testname_count[testcase.name] = 1
+        if testcase.name not in self.testname_count:
+            self.testname_count[testcase.name] = 0
+        self.testname_count[testcase.name] += 1
 
         self.count['tests'] += 1
         if testcase.category in self.count:
             self.count[testcase.category] += 1
+
+    def _indicate_multi_test_runs(self):
+        """
+        Append '(N)' to all tests that are run more than once
+        """
+        for name, count in self.testname_count.items():
+            if count > 1 and name != 'garbage_check':
+                seq = 1
+                for tc in self.testcases:
+                    if tc.name == name:
+                        tc.name += '(%d)' % seq
+                        seq += 1
 
     def _consolidate_garbage_checks(self):
         for i, tc in enumerate(self.testcases):
