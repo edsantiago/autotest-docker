@@ -18,12 +18,13 @@ None
 """
 
 import os.path
+from autotest.client import utils
 from dockertest import subtest
 from dockertest.output import OutputGood
 from dockertest.output import DockerVersion
 from dockertest.output import mustpass
 from dockertest.dockercmd import DockerCmd
-from dockertest.docker_daemon import SocketClient
+from dockertest.docker_daemon import SocketClient, which_docker
 
 
 class version(subtest.Subtest):
@@ -48,7 +49,14 @@ class version(subtest.Subtest):
         with open(os.path.join(self.job.sysinfo.sysinfodir,
                                'docker_version'), 'wb') as info_file:
             info_file.write("%s\n" % info)
+        with open(os.path.join(self.job.sysinfo.sysinfodir,
+                               'docker_rpm'), 'wb') as rpm_file:
+            rpm_file.write(self._docker_rpm())
         self.verify_version(docker_version)
+
+    @staticmethod
+    def _docker_rpm():
+        return utils.run("rpm -q %s" % which_docker()).stdout
 
     def verify_version(self, docker_version):
         # TODO: Make URL to daemon configurable
