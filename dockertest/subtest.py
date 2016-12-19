@@ -19,14 +19,56 @@ import copy
 from ConfigParser import Error
 from autotest.client.shared.error import TestError, TestNAError
 from autotest.client.shared.version import get_version
-from autotest.client import test
+from autotest.client import test, utils
 import version
 import config
 import subtestbase
+from docker_daemon import which_docker
 from xceptions import DockerTestFail
 from xceptions import DockerTestNAError
 from xceptions import DockerTestError
 from xceptions import DockerSubSubtestNAError
+
+
+MEMO_CACHE = {}
+
+
+def docker_rpm():
+    """
+    Returns the full NVRA of the currently-installed docker or docker-latest
+    """
+    if 'docker_rpm' not in MEMO_CACHE:
+        rpm = utils.run("rpm -q %s" % which_docker()).stdout.strip()
+        MEMO_CACHE['docker_rpm'] = rpm
+    return MEMO_CACHE['docker_rpm']
+
+
+def known_failures():
+    """
+    Returns a dict containing known test failures. Primary key is
+    subtest name (e.g. docker_cli/foo/bar), value is another dict
+    whose key is docker NVRA (e.g. docker-1.12.5-8.el7.x86_64),
+    value of that is a string description of the problem (e.g.
+    a bz number and comment).
+
+    FIXME: file path is hardcoded for development purposes; it
+    should be centrally accessible somewhere, possibly provided
+    at setup time by ADEPT.
+    """
+    if 'known_failures' not in MEMO_CACHE:
+        known = {}
+        import csv
+        # FIXME: how to determine path to top-level directory?
+        path_known = '/var/lib/autotest/client/tests/docker/known_failures.csv'
+        with open(path_known, 'rb') as csv_fh:
+            csv_reader = csv.reader(csv_fh)
+            for row in csv_reader:
+                if row[1] not in known:
+                    known[row[1]] = {}
+                # Each row is: NVR, subtest, description
+                known[row[1]][row[0]] = row[2]
+        MEMO_CACHE['known_failures'] = known
+    return MEMO_CACHE['known_failures']
 
 
 class Subtest(subtestbase.SubBase, test.test):
@@ -429,12 +471,44 @@ class SubSubtestCaller(Subtest):
                               self.exception_info["error_source"],
                               detail)
             exc_info = self.exception_info["exc_info"]
+            # Ignore known problems in specific docker builds
+            if self.is_known_failure(name):
+                self.final_subsubtests.add(name)
             # Treat N/A as passed, even though this may hide obscure failures
             if isinstance(detail, TestNAError):
                 self.logwarning("Treating TestNAError as PASS")
                 self.final_subsubtests.add(name)
             # cleanup() will still be called before this propagates
             raise exc_info[0], exc_info[1], exc_info[2]
+
+    def is_known_failure(self, name):
+        """
+        Do we have a registered known failure in this subtest when running
+        on the currently-installed docker? Return True if so.
+        Side effect: log warning messages to help human debuggers.
+        """
+        # e.g. docker_cli/subtest/subsubtest
+        fullname = os.path.join(self.config_section, name)
+        known = known_failures()
+        if fullname not in known:
+            return False
+        docker_nvr = docker_rpm()
+        if docker_nvr in known[fullname]:
+            why = known[fullname][docker_nvr]
+            self.logwarning("Known test failure on %s: %s", docker_nvr, why)
+            return True
+        # This exact NVR is not known to fail, but perhaps this is just a
+        # new build that doesn't fix a previously-known problem. Look for
+        # known failures in other builds of this N-V (name, version) and
+        # issue a heads-up if appropriate.
+
+        def _nv(nvr):
+            return nvr[:nvr.rfind('-')]
+        docker_nv = _nv(docker_nvr)
+        if docker_nv in [_nv(x) for x in known[fullname]]:
+            self.logwarning("This test is known to fail in other %s builds",
+                            docker_nv)
+        return False
 
     def run_all_stages(self, name, subsubtest):
         """
