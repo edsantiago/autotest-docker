@@ -30,17 +30,11 @@ from xceptions import DockerTestError
 from xceptions import DockerSubSubtestNAError
 
 
-MEMO_CACHE = {}
-
-
 def docker_rpm():
     """
     Returns the full NVRA of the currently-installed docker or docker-latest
     """
-    if 'docker_rpm' not in MEMO_CACHE:
-        rpm = utils.run("rpm -q %s" % which_docker()).stdout.strip()
-        MEMO_CACHE['docker_rpm'] = rpm
-    return MEMO_CACHE['docker_rpm']
+    return utils.run("rpm -q %s" % which_docker()).stdout.strip()
 
 
 def known_failures():
@@ -50,25 +44,18 @@ def known_failures():
     whose key is docker NVRA (e.g. docker-1.12.5-8.el7.x86_64),
     value of that is a string description of the problem (e.g.
     a bz number and comment).
-
-    FIXME: file path is hardcoded for development purposes; it
-    should be centrally accessible somewhere, possibly provided
-    at setup time by ADEPT.
     """
-    if 'known_failures' not in MEMO_CACHE:
-        known = {}
-        import csv
-        # FIXME: how to determine path to top-level directory?
-        path_known = '/var/lib/autotest/client/tests/docker/known_failures.csv'
-        with open(path_known, 'rb') as csv_fh:
-            csv_reader = csv.reader(csv_fh)
-            for row in csv_reader:
-                if row[1] not in known:
-                    known[row[1]] = {}
-                # Each row is: NVR, subtest, description
-                known[row[1]][row[0]] = row[2]
-        MEMO_CACHE['known_failures'] = known
-    return MEMO_CACHE['known_failures']
+    known = {}
+    import csv
+    path_known = os.path.join(config.CONFIGCUSTOMS, 'known_failures.csv')
+    with open(path_known, 'rb') as csv_fh:
+        csv_reader = csv.reader(csv_fh)
+        for row in csv_reader:
+            if row[1] not in known:
+                known[row[1]] = {}
+            # Each row is: NVR, subtest, description
+            known[row[1]][row[0]] = row[2]
+    return known
 
 
 class Subtest(subtestbase.SubBase, test.test):
