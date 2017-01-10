@@ -484,14 +484,19 @@ class SubSubtestCaller(Subtest):
             why = known[fullname][docker_nvr]
             self.logwarning("Known test failure on %s: %s", docker_nvr, why)
             return True
-        # This exact NVR is not known to fail, but perhaps this is just a
-        # new build that doesn't fix a previously-known problem. Look for
-        # known failures in other builds of this N-V (name, version) and
-        # issue a heads-up if appropriate.
 
+        # This exact NVR is not known to fail. What about NV?
         def _nv(nvr):
             return nvr[:nvr.rfind('-')]
         docker_nv = _nv(docker_nvr)
+
+        if docker_nv in known[fullname]:
+            why = known[fullname][docker_nv]
+            self.logwarning("Test expected to fail on all builds of %s: %s",
+                            docker_nv, why)
+            return True
+
+        # No known failures for NVR or NV. What about other builds of same NV?
         if docker_nv in [_nv(x) for x in known[fullname]]:
             self.logwarning("This test is known to fail in other %s builds",
                             docker_nv)
