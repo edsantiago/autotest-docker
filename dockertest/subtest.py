@@ -468,21 +468,22 @@ class SubSubtestCaller(Subtest):
             # cleanup() will still be called before this propagates
             raise exc_info[0], exc_info[1], exc_info[2]
 
-    def is_known_failure(self, name):
+    def is_known_failure(self, subsubtestname):
         """
         Do we have a registered known failure in this subtest when running
         on the currently-installed docker? Return True if so.
         Side effect: log warning messages to help human debuggers.
         """
         # e.g. docker_cli/subtest/subsubtest
-        fullname = os.path.join(self.config_section, name)
+        fullname = os.path.join(self.config_section, subsubtestname)
         known = known_failures()
         if fullname not in known:
             return False
         docker_nvr = docker_rpm()
         if docker_nvr in known[fullname]:
             why = known[fullname][docker_nvr]
-            self.logwarning("Known test failure on %s: %s", docker_nvr, why)
+            self.logwarning("%s: Known failure on %s: %s",
+                            subsubtestname, docker_nvr, why)
             return True
 
         # This exact NVR is not known to fail. What about NV?
@@ -492,14 +493,25 @@ class SubSubtestCaller(Subtest):
 
         if docker_nv in known[fullname]:
             why = known[fullname][docker_nv]
-            self.logwarning("Test expected to fail on all builds of %s: %s",
-                            docker_nv, why)
+            self.logwarning("%s expected to fail on all builds of %s: %s",
+                            subsubtestname, docker_nv, why)
             return True
 
-        # No known failures for NVR or NV. What about other builds of same NV?
+        # No known failures for NVR or NV. What about other builds of same NV
+        # or a related one? These messages are informational only, intended
+        # as hints for a test engineer trying to understand new failures.
         if docker_nv in [_nv(x) for x in known[fullname]]:
-            self.logwarning("This test is known to fail in other %s builds",
-                            docker_nv)
+            # e.g. docker is 1.12.5-6, we have an exception for 1.12.5-5
+            self.logwarning("%s is known to fail in other %s builds",
+                            subsubtestname, docker_nv)
+        elif docker_nv.count('.') > 1:
+            def _nv_base(nv_orig):
+                return nv_orig[:nv_orig.rfind('.')]
+            docker_nv_base = _nv_base(docker_nv)
+            if docker_nv_base in [_nv_base(_nv(x)) for x in known[fullname]]:
+                # e.g. docker is 1.12.6-1, we have an exception for 1.12.5-5
+                self.logwarning("%s is known to fail in other %s.x builds",
+                                subsubtestname, docker_nv_base)
         return False
 
     def run_all_stages(self, name, subsubtest):
