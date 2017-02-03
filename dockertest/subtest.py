@@ -460,6 +460,7 @@ class SubSubtestCaller(Subtest):
             exc_info = self.exception_info["exc_info"]
             # Ignore known problems in specific docker builds
             if self.is_known_failure(name):
+                self.logwarning("Treating %s subsubtest failure as PASS", name)
                 self.final_subsubtests.add(name)
             # Treat N/A as passed, even though this may hide obscure failures
             if isinstance(detail, TestNAError):
@@ -487,12 +488,11 @@ class SubSubtestCaller(Subtest):
             return True
 
         # This exact NVR is not known to fail. What about NV?
-        def _nv(nvr):
-            return nvr[:nvr.rfind('-')]
+        _nv = lambda nvr: nvr[:nvr.rfind('-')]
         docker_nv = _nv(docker_nvr)
-
-        if docker_nv in known[fullname]:
-            why = known[fullname][docker_nv]
+        docker_nv_wild = docker_nv + '-*'
+        if docker_nv_wild in known[fullname]:
+            why = known[fullname][docker_nv_wild]
             self.logwarning("%s expected to fail on all builds of %s: %s",
                             subsubtestname, docker_nv, why)
             return True
@@ -501,15 +501,14 @@ class SubSubtestCaller(Subtest):
         # or a related one? These messages are informational only, intended
         # as hints for a test engineer trying to understand new failures.
         if docker_nv in [_nv(x) for x in known[fullname]]:
-            # e.g. docker is 1.12.5-6, we have an exception for 1.12.5-5
+            # e.g. docker is 1.12.5-6, we have an exception for 1.12.5->>5<<
             self.logwarning("%s is known to fail in other %s builds",
                             subsubtestname, docker_nv)
         elif docker_nv.count('.') > 1:
-            def _nv_base(nv_orig):
-                return nv_orig[:nv_orig.rfind('.')]
+            _nv_base = lambda nv_orig: nv_orig[:nv_orig.rfind('.')]
             docker_nv_base = _nv_base(docker_nv)
             if docker_nv_base in [_nv_base(_nv(x)) for x in known[fullname]]:
-                # e.g. docker is 1.12.6-1, we have an exception for 1.12.5-5
+                # e.g. docker is 1.12.6-1, we have exception for 1.12.>>5<<-*
                 self.logwarning("%s is known to fail in other %s.x builds",
                                 subsubtestname, docker_nv_base)
         return False
