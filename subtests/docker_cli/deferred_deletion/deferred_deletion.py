@@ -2,8 +2,36 @@ r"""
 Summary
 ---------
 
-Test deferred deletion: device mapper will not delete a docker
+Test deferred deletion: device mapper should not delete a docker
 filesystem if it's still in use.
+
+Operational Summary
+----------------------
+
+#. Run a docker container
+#. Run a test script inside docker mount space that will:
+#. - Find out the local (host) mountpoint of the container's root filesystem.
+#. - cd into that directory
+#. - Read the Deferred-Deletion count from 'docker info'.
+#. - Remove the container.
+#. - Read the Deferred-Deletion count; confirm that it has grown by one.
+#. - cd back out of the container rootfs
+#. - Read the Deferred-Deletion count; confirm that it has gone back down.
+
+Operational Detail
+------------------
+
+We need to do all the important work from inside a helper script,
+because our autotest process will only have access to the container's
+mounts if MountFlags=slave is *absent* from the docker systemd unit file;
+by default that option is present, and it is not clear if/when it will be
+removed. To make sure we have access to the container's mounts we need
+to nsenter the docker daemon's mount namespace, and we can't do that
+within autotest (using ctypes.CDLL and setns) because autotest is
+multithreaded and setns() doesn't allow that.
+
+Prerequisites
+-------------
 
 This test is only applicable if docker daemon is run with:
 
@@ -20,29 +48,6 @@ so by checking that the sysctl knob /proc/sys/fs/may_detach_mounts
 (introduced in kernel 3.10.0-632) exists and is 1.
 
 We abort with TestNAError if any precondition fails.
-
-Note that we need to do all the important work from inside a
-helper script, because our autotest process will only have access
-to the container's mounts if MountFlags=slave is *absent* from
-the docker systemd unit file; by default that option is present,
-and it is not clear if/when it will be removed. To make sure
-we have access to the container's mounts we need to nsenter
-the docker daemon's mount namespace, and we can't do that within
-autotest (using ctypes.CDLL and setns) because autotest is
-multithreaded and setns() doesn't allow that.
-
-Operational Summary
-----------------------
-
-#. Run a docker container
-#. Run a test script inside docker mount space that will:
-#. - Find out the local (host) mountpoint of the container's root filesystem.
-#. - cd into that directory
-#. - Read the Deferred-Deletion count from 'docker info'.
-#. - Remove the container.
-#. - Read the Deferred-Deletion count; confirm that it has grown by one.
-#. - cd back out of the container rootfs
-#. - Read the Deferred-Deletion count; confirm that it has gone back down.
 
 """
 
