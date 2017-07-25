@@ -3,7 +3,7 @@
 # Pylint runs from a different directory, it's fine to import this way
 # pylint: disable=W0403
 
-import unittest
+import unittest2
 
 class FakeCheckOutput(object):
 
@@ -42,7 +42,7 @@ class FakeCheckOutput(object):
         self.name = None
 
 
-class TestRPMS(unittest.TestCase):
+class TestRPMS(unittest2.TestCase):
 
     def setUp(self):
         from dockertest import environment
@@ -119,5 +119,45 @@ class TestRPMS(unittest.TestCase):
             self.environment.RPMS.nvra_type = original_type
 
 
+class TestCanonicalDistro(unittest2.TestCase):
+
+    def setUp(self):
+        from dockertest import environment
+        self.CanonicalDistro = environment.CanonicalDistro
+
+    def test_bad_detectives(self):
+        ods = self.CanonicalDistro.detectives
+        try:
+            self.CanonicalDistro.detectives = ('foo', 'bar', 'baz')
+            self.assertRaisesRegex(AttributeError, '\W+foo\W+', self.CanonicalDistro)
+            self.assertRaisesRegex(TypeError, '2 given',
+                                   self.CanonicalDistro, *('foo', 'bar'))
+            self.assertRaisesRegex(TypeError, '3 given',
+                                   self.CanonicalDistro,
+                                   *('foo', 'bar'), **dict(baz="none"))
+            self.assertRaisesRegex(TypeError, 'foobar',
+                                   self.CanonicalDistro, **dict(foobar=None))
+        finally:
+            self.CanonicalDistro.detectives = ods
+
+    def test_multi_lower(self):
+        ods = self.CanonicalDistro.detectives
+        try:
+            self.CanonicalDistro.detectives = ('foo', 'bar', 'baz', 'bob')
+            self.CanonicalDistro.foo = staticmethod(lambda evidence: "")
+            self.CanonicalDistro.bar = staticmethod(lambda evidence: str(evidence).upper())
+            self.CanonicalDistro.baz = staticmethod(lambda evidence: None)
+            self.CanonicalDistro.bob = staticmethod(self.CanonicalDistro.bar)
+            args = self.CanonicalDistro('DArThVaDeR')
+            dargs = self.CanonicalDistro(object='DArThVaDeR')
+            self.assertEqual(dargs, 'darthvader')
+            self.assertEqual(dargs, args)
+            self.assertEqual(dargs.clues, {'bob': 'darthvader', 'bar': 'darthvader'})
+            self.assertDictEqual(dargs.clues, args.clues)
+        finally:
+            self.CanonicalDistro.detectives = ods
+            del self.CanonicalDistro.foo, self.CanonicalDistro.bar, self.CanonicalDistro.baz
+
+
 if __name__ == '__main__':
-    unittest.main()
+    unittest2.main()

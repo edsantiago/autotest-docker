@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+
 """
 Low-level/standalone host-environment handling/checking utilities/classes/data
 
@@ -173,3 +174,64 @@ class RPMS(Mapping):
         """Flush cache of RPM NVRAs to force fresh queries on access"""
         cls._cache = dict()
         cls._alldone = False
+
+
+class CanonicalDistro(str):
+
+    """
+    Represents a canonical/standardized name for the OS distribution
+
+    :param object: Same as builtin string method
+    """
+
+    #: Listing of detection class-method names to use.  Each is expected
+    #: to return either None or a canonical distro name (string).
+    #: Each must accept a single, optional string-argument for
+    #: testing instead of whatever default data would normally
+    #: be used.
+    detectives = ("fedora", "rhel", "centos")
+
+    #: Mapping of detective names to lower-case return strings
+    clues = None
+
+    def __new__(cls, *args, **dargs):
+        # Sigh, the str builtin really does use a parameter named 'object' :_(
+        if len(args) > 1 or len(dargs) > 1:
+            raise TypeError("__init__() takes at most 1 argument (%d given)"
+                            % (len(args) + len(dargs)))
+        elif len(dargs) == 1:
+            if 'object' in dargs:
+                _object = dargs['object']
+            else:
+                raise TypeError("__init__() got unexpected keyword argument %s"
+                                % dargs.popitem()[0])
+        elif len(args) == 1:
+            _object = args[0]
+        else:
+            _object = ''  # default
+
+        _clues = cls.investigate(str(_object))
+        victims = set(_clues.values())
+        if len(victims) > 1:
+            raise ValueError("Multiple distros detected: %s" % _clues)
+        elif len(victims) != 1:
+            raise ValueError("No distros detected: %s" % _clues)
+
+        # immutables can't rely on __init__(), it must be done here
+        new_cd = super(CanonicalDistro, cls).__new__(cls, victims.pop())
+        new_cd.clues = _clues
+        return new_cd
+
+    @classmethod
+    def investigate(cls, evidence=''):
+        """
+        Given optional string, return mapping of detective names to results.
+        """
+        _clues = {}
+        for detective in cls.detectives:
+            spyglass = getattr(cls, detective)
+            clue = str(spyglass(evidence)).lower()
+            if clue in ('', 'none'):
+                continue
+            _clues[detective] = clue
+        return _clues
