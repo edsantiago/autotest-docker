@@ -189,10 +189,10 @@ class CanonicalDistro(str):
     #: Each must accept a single, optional string-argument for
     #: testing instead of whatever default data would normally
     #: be used.
-    detectives = ("fedora", "rhel", "centos")
+    distros = ("fedora", "rhel", "centos")
 
-    #: Mapping of detective names to lower-case return strings
-    clues = None
+    #: Mapping of distro names to lower-case return strings
+    _matches = None
 
     def __new__(cls, *args, **dargs):
         # Sigh, the str builtin really does use a parameter named 'object' :_(
@@ -210,28 +210,42 @@ class CanonicalDistro(str):
         else:
             _object = ''  # default
 
-        _clues = cls.investigate(str(_object))
-        victims = set(_clues.values())
-        if len(victims) > 1:
-            raise ValueError("Multiple distros detected: %s" % _clues)
-        elif len(victims) != 1:
-            raise ValueError("No distros detected: %s" % _clues)
+        _matches = cls.investigate(str(_object))
+        distro_matches = set(_matches.values())
+        if len(distro_matches) > 1:
+            raise ValueError("Multiple distros detected: %s" % _matches)
+        elif len(distro_matches) != 1:
+            raise ValueError("No distros detected: %s" % _matches)
 
         # immutables can't rely on __init__(), it must be done here
-        new_cd = super(CanonicalDistro, cls).__new__(cls, victims.pop())
-        new_cd.clues = _clues
+        new_cd = super(CanonicalDistro, cls).__new__(cls, distro_matches.pop())
+        new_cd.matches = _matches
         return new_cd
 
+    # Must exactly match the distros list defined above: one method
+    # for each distro. FIXME: define what "hints" is supposed to be.
+    @staticmethod
+    def fedora(hints):
+        return None
+
+    @staticmethod
+    def rhel(hints):
+        return None
+
+    @staticmethod
+    def centos(hints):
+        return None
+
     @classmethod
-    def investigate(cls, evidence=''):
+    def investigate(cls, hint=''):
         """
-        Given optional string, return mapping of detective names to results.
+        Given optional string, return mapping of distro names to results.
         """
-        _clues = {}
-        for detective in cls.detectives:
-            spyglass = getattr(cls, detective)
-            clue = str(spyglass(evidence)).lower()
-            if clue in ('', 'none'):
+        _matches = {}
+        for distro in cls.distros:
+            distro_match = getattr(cls, distro)
+            match = str(distro_match(hint)).lower()
+            if match in ('', 'none'):
                 continue
-            _clues[detective] = clue
-        return _clues
+            _matches[distro] = match
+        return _matches

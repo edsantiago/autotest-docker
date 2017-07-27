@@ -125,10 +125,10 @@ class TestCanonicalDistro(unittest2.TestCase):
         from dockertest import environment
         self.CanonicalDistro = environment.CanonicalDistro
 
-    def test_bad_detectives(self):
-        ods = self.CanonicalDistro.detectives
+    def test_bad_distros(self):
+        orig_distros = self.CanonicalDistro.distros
         try:
-            self.CanonicalDistro.detectives = ('foo', 'bar', 'baz')
+            self.CanonicalDistro.distros = ('foo', 'bar', 'baz')
             self.assertRaisesRegex(AttributeError, '\W+foo\W+', self.CanonicalDistro)
             self.assertRaisesRegex(TypeError, '2 given',
                                    self.CanonicalDistro, *('foo', 'bar'))
@@ -138,25 +138,27 @@ class TestCanonicalDistro(unittest2.TestCase):
             self.assertRaisesRegex(TypeError, 'foobar',
                                    self.CanonicalDistro, **dict(foobar=None))
         finally:
-            self.CanonicalDistro.detectives = ods
+            self.CanonicalDistro.distros = orig_distros
 
     def test_multi_lower(self):
-        ods = self.CanonicalDistro.detectives
+        orig_distros = self.CanonicalDistro.distros
+        orig_fedora = self.CanonicalDistro.fedora
+        orig_rhel = self.CanonicalDistro.rhel
         try:
-            self.CanonicalDistro.detectives = ('foo', 'bar', 'baz', 'bob')
-            self.CanonicalDistro.foo = staticmethod(lambda evidence: "")
-            self.CanonicalDistro.bar = staticmethod(lambda evidence: str(evidence).upper())
-            self.CanonicalDistro.baz = staticmethod(lambda evidence: None)
-            self.CanonicalDistro.bob = staticmethod(self.CanonicalDistro.bar)
-            args = self.CanonicalDistro('DArThVaDeR')
-            dargs = self.CanonicalDistro(object='DArThVaDeR')
-            self.assertEqual(dargs, 'darthvader')
-            self.assertEqual(dargs, args)
-            self.assertEqual(dargs.clues, {'bob': 'darthvader', 'bar': 'darthvader'})
-            self.assertDictEqual(dargs.clues, args.clues)
+            self.CanonicalDistro.distros = ('fedora', 'rhel')
+            self.CanonicalDistro.fedora = staticmethod(lambda hints: "")
+            self.CanonicalDistro.rhel = staticmethod(lambda hints: str(hints).upper())
+            hint = 'ThIS will BeCoMe LOWER CASE'
+            via_args = self.CanonicalDistro(hint)
+            via_dargs = self.CanonicalDistro(object=hint)
+            self.assertEqual(via_dargs, hint.lower())
+            self.assertEqual(via_dargs, via_args)
+            self.assertEqual(via_dargs.matches, {'rhel': hint.lower()})
+            self.assertDictEqual(via_dargs.matches, via_args.matches)
         finally:
-            self.CanonicalDistro.detectives = ods
-            del self.CanonicalDistro.foo, self.CanonicalDistro.bar, self.CanonicalDistro.baz
+            self.CanonicalDistro.distros = orig_distros
+            self.CanonicalDistro.fedora = orig_fedora
+            self.CanonicalDistro.rhel = orig_rhel
 
 
 if __name__ == '__main__':
