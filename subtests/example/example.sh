@@ -1,5 +1,8 @@
 #!/bin/bash
 #
+# [ QUICK-START INSTRUCTIONS: search for FIXME, edit/update/delete those
+#   sections as appropriate. ]
+#
 # FIXME - add a one-line description of what this script is supposed to test
 #
 # FIXME - possibly add a more verbose multi-line description here. Not
@@ -15,14 +18,10 @@
 # to skim it to see the available helper functions
 #
 
-# Don't touch. This lets the docker() wrapper log debug statements
-# to original stdout, while also preserving a context-specific stdout
-exec 5>&1
-
 # In case you need a temp dir, e.g. for bind mounts or Dockerfiles
-TMPDIR=$(mktemp -d --tmpdir docker-test-sample.XXXXXXXX)
+TEST_TMPDIR=$(mktemp -d --tmpdir docker-test-sample.XXXXXXXX)
 if [ -z "$DEBUG" ]; then
-    trap 'cd /;/bin/rm -rf $TMPDIR' 0
+    trap 'cd /;/bin/rm -rf $TEST_TMPDIR' EXIT
 fi
 
 # Docker image on which to test. This will probably be overridden in ADEPT.
@@ -36,7 +35,7 @@ die() {
 # Helper for the helpers: returns a full path to a stdout or stderr log file
 LOG_COUNTER=0
 commandlog() {
-    printf "%s/log.%s.%02d" $TMPDIR "$1" $LOG_COUNTER
+    printf "%s/log.%s.%02d" $TEST_TMPDIR "$1" $LOG_COUNTER
 }
 
 # When debugging failed tests, it is crucial to know the exact commands
@@ -50,8 +49,11 @@ commandlog() {
 #    * outputs stdout to caller's stdout
 #    * returns with docker's exit status
 #
-# FIXME-QE: refactor to make it reusable for kpod, buildah; not just docker
+# TODO-QE: refactor to make it reusable for kpod, buildah; not just docker
 #
+# The 'exec' preserves original stdout, allowing our caller to redirect
+# or pipe without being affected by debug statements.
+exec 5>&1
 docker() {
     echo "DEBUG:docker $@" >&5
 
@@ -94,9 +96,9 @@ die_if_string_present() {
     die "TEST_FAIL:Found unwanted string '$string' in $stream: '$found'"
 }
 
-# FIXME-QE: if needed, add equivalents for regex
-# FIXME-QE: if needed, add non-die equivalents so further tests can proceed
-# FIXME-QE: if needed, add docker_require(), return TEST_NA if version < wanted
+# TODO-QE: if needed, add equivalents for regex
+# TODO-QE: if needed, add non-die equivalents so further tests can proceed
+# TODO-QE: if needed, add docker_require(), return TEST_NA if version < wanted
 
 # END   setup
 ###############################################################################
@@ -107,15 +109,18 @@ die_if_string_present() {
 # checked. See later below for commands that require a detached docker
 # command that you can interact with.
 
-# Run a command that's expected to terminate, e.g.:
+# FIXME: Here's where you run a command that's expected to terminate, e.g.:
 #
-#   mkdir $TMPDIR/mysubd; docker -v $TMPDIR/mysubd:/xyz run $IMG ls -lZd /xyz
+#   mkdir $TEST_TMPDIR/mysubd; docker -v $TEST_TMPDIR/mysubd:/xyz run $IMG ls -lZd /xyz
 #   docker ps -a
 #   docker --userns=host run $IMG /bin/crashme
 #   storage_stuff=$(docker info | grep -A3 'Storage Driver')
 #   ...
+#
+# If this is your intention, edit this section as needed then delete
+# the next one ("detached docker command")
 
-docker run --rm -v $TMPDIR/nonexistent-subdir:/mumble $IMG date || die
+docker run --rm -v $TEST_TMPDIR/nonexistent-subdir:/mumble $IMG date || die
 
 # Check for errors in output; also make sure our desired output is present
 die_if_string_present "Error running date command"
@@ -128,9 +133,13 @@ expect_string "Today is the first day of the rest of your life"
 # Use this for starting a detached container, then interacting with it.
 # For instance: sending signals, or engaging with a server.
 
+# FIXME: Here's where you run a detached docker command
+#    If this is your intention in testing, write your setup and docker
+#    and test commands here, and delete the previous ("single docker
+#    command") section.
 CID=$(docker run -d $IMG bash -c 'while :;do date; sleep 2;done')
 
-# FIXME: interact with container
+# FIXME: Here's where you interact with container
 count1=$(docker logs $CID | wc -l)
 sleep 5
 count2=$(docker logs $CID | wc -l)
