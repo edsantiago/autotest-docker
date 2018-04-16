@@ -45,7 +45,7 @@ class truncated(empty):
         self.failif(outputgood, "Unexpected good output - this command was "
                     "supposed to fail: %s" % outputgood)
         self.failif(cmdresult.exit_status == 0,
-                    "Unexpected exit status: got 0, expected error exit")
+                    "Unexpected exit status: expected error exit, got 0")
 
     def check_status(self):
         successful_exit = self.sub_stuff['cmdresult'].exit_status == 0
