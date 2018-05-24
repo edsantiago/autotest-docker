@@ -68,7 +68,17 @@ class run_cgroup_parent_base(SubSubtest):
                    '--cidfile', cidfile,
                    DockerImage.full_name_from_defaults(self.config),
                    '/bin/cat', '/proc/1/cgroup']
-        dc = DockerCmd(self, "run", subargs,
+
+        # docker only supports systemd cgroups, so that's what these tests
+        # cover. Podman supports systemd and cgroupfs, but the latter are
+        # the default. The command-line option to use systemd cgroups has
+        # to precede the action: it's a podman option, not a run option.
+        # FIXME: 2018-05-21 mheon has indicated that the default will
+        #        be switching back to systemd
+        cmd = "run"
+        if DockerVersion().is_podman:
+            cmd = "--cgroup-manager=systemd run"
+        dc = DockerCmd(self, cmd, subargs,
                        timeout=self.config['docker_timeout'])
         self.sub_stuff["cmdresult"] = dc.execute()
 
